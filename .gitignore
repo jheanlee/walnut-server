@@ -1,0 +1,10 @@
+.DS_Store
+CMakeFiles
+.idea
+cmake-build*
+
+*.o
+*.a
+
+bin
+lib
