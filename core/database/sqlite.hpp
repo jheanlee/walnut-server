@@ -6,6 +6,6 @@
   #define BRANCH_VAULT_SQLITE_HPP
   #include <sqlite3.h>
 
-//  void open_db(sqlite3 **db);
+  void open_db(sqlite3 **db);
 
 #endif //BRANCH_VAULT_SQLITE_HPP

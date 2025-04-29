@@ -12,7 +12,11 @@ add_executable(branch-vault main.cpp
         core/database/sqlite.cpp
         core/database/sqlite.hpp
         core/shared.cpp
-        core/shared.hpp)
+        core/shared.hpp
+        core/message.cpp
+        core/message.hpp
+        core/api/manager.cpp
+        core/api/manager.hpp)
 
 target_include_directories(branch-vault PRIVATE ${sodium_INCLUDE_DIR})
 

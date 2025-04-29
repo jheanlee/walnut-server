@@ -7,6 +7,8 @@ orm/target
 orm/migration/target
 orm/entity/target
 
+api/target
+
 *.o
 *.a
 
