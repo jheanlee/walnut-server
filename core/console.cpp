@@ -50,11 +50,51 @@ void console(Level level, Code code, const char *detail, const std::string &func
     case SODIUM_INIT_FAILED:
       msg_buffer << "Failed to initialise libsodium";
       break;
-    case DEBUG_MSG:
-      cout_buffer << CYAN << "DEBUG_MSG: " << RESET;
-      break;
     case SQLITE_OPEN_FAILED:
       msg_buffer << "Failed to open database";
+      break;
+    case API_SOCK_CREATE_FAILED:
+      msg_buffer << "Failed to create an Unix socket for api process";
+      break;
+    case API_SOCK_BIND_FAILED:
+      msg_buffer << "Failed to bind Unix socket for api process";
+      break;
+    case API_SOCK_LISTEN_FAILED:
+      msg_buffer << "Failed to listen on Unix socket for api process";
+      break;
+    case API_LISTEN_STARTED:
+      msg_buffer << "Started listening on Unix socket for api process";
+      break;
+    case API_SOCK_POLL_ERR:
+      msg_buffer << "Failed to poll on Unix socket for api process";
+      break;
+    case API_SOCK_ACCEPT_FAILED:
+      msg_buffer << "Failed to accept api process";
+      break;
+    case API_SERVICE_ENDED:
+      msg_buffer << "Api service has ended";
+      break;
+    case API_CLIENT_CONNECTION_ACCEPTED:
+      msg_buffer << "Accepted an api process";
+      break;
+    case API_CLIENT_CONNECTION_ENDED:
+      msg_buffer << "An api process has ended";
+      break;
+    case API_HEARTBEAT_TIMEOUT:
+      msg_buffer << "An api process has timed out";
+      break;
+    case MESSAGE_DUMP_FAILED:
+      msg_buffer << "Failed to dump message";
+      break;
+    case MESSAGE_LOAD_FAILED:
+      msg_buffer << "Failed to load message";
+      break;
+    case MESSAGE_SEND_FAILED:
+      msg_buffer << "Failed to send message";
+      break;
+
+    case DEBUG_MSG:
+      cout_buffer << CYAN << "DEBUG_MSG: " << RESET;
       break;
   }
 

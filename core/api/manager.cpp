@@ -58,7 +58,7 @@ void api_control_thread_func() {
       continue;
     }
 
-    api_threads.emplace_back();
+    api_threads.emplace_back(api_session_thread_func, api_fd, api_addr);
   }
 
   console(INFO, API_SERVICE_ENDED, nullptr, "api::api_control");
@@ -73,7 +73,7 @@ void api_session_thread_func(int api_fd, sockaddr_un api_addr) {
   console(INFO, API_CLIENT_CONNECTION_ACCEPTED, nullptr, "api::api_session");
 
   std::atomic<bool> flag_kill(false), flag_heartbeat(false);
-  char inbuffer[256] = {0}, outbuffer[256] = {0}, client_buffer[32768];
+  char inbuffer[256] = {0}, outbuffer[256] = {0};
   int recv_status;
   std::mutex send_mutex;
   std::thread heartbeat_thread(api_heartbeat_thread_func, std::ref(flag_kill), std::ref(flag_heartbeat), std::ref(api_fd), std::ref(send_mutex));
@@ -90,16 +90,50 @@ void api_session_thread_func(int api_fd, sockaddr_un api_addr) {
       flag_kill = true;
     } else if (recv_status > 0) {
       switch (message.type) {
-        //  TODO
+        case API_HEARTBEAT:
+          flag_heartbeat = true;
       }
     }
   }
 
+  console(INFO, API_CLIENT_CONNECTION_ENDED, nullptr, "api::session");
   close(api_fd);
   flag_kill = true;
   heartbeat_thread.join();
 }
 
 void api_heartbeat_thread_func(std::atomic<bool> &flag_kill, std::atomic<bool> &flag_heartbeat, int &api_fd, std::mutex &send_mutex) {
+  std::unique_lock<std::mutex> lock(send_mutex, std::defer_lock);
 
+  char outbuffer[256] = {0};
+  Message heartbeat_message = {.type = API_HEARTBEAT, .string = ""};
+
+  std::chrono::system_clock::time_point timer;
+  std::chrono::seconds heartbeat_duration;
+
+  while (!flag_kill) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(API_HEARTBEAT_TIMOUT));
+
+    //  send heartbeat message
+    if (send_message(api_fd, outbuffer, sizeof(outbuffer), heartbeat_message, send_mutex) <= 0) {
+      console(WARNING, MESSAGE_SEND_FAILED, nullptr, "api::api_heartbeat");
+    }
+
+    //  start timing
+    timer = std::chrono::system_clock::now();
+    flag_heartbeat = false;
+
+    //  wait for heartbeat
+    while (!flag_kill && !flag_heartbeat) {
+      heartbeat_duration = std::chrono::duration_cast<std::chrono::seconds> (std::chrono::system_clock::now() - timer);
+
+      if (heartbeat_duration > std::chrono::milliseconds(API_HEARTBEAT_TIMOUT)) {
+        console(INFO, API_HEARTBEAT_TIMEOUT, nullptr, "api::api_heartbeat");
+        flag_kill = true;
+        return;
+      }
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+  }
 }

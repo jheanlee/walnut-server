@@ -31,8 +31,8 @@
     //  0x20 reserved for future use
 
     //  0x30 api
-    API_CONNECT = 0x30,
-    API_EXIT = 0x31,
+    API_CONNECT =   0x30,
+    API_EXIT =      0x31,
     API_HEARTBEAT = 0x32,
   };
 

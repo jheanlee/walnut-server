@@ -12,6 +12,7 @@
   #define SOCK_CONNECTION_LIMIT 5
   #define API_SOCK_PATH "/tmp/branch-vault.sock"
   #define API_POLL_TIMEOUT 100
+  #define API_HEARTBEAT_TIMOUT 60000
 
   namespace config {
     extern const char *db_path;
