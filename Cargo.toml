@@ -1,0 +1,4 @@
+[workspace]
+members = ["orm/migration", "orm/entity", "core"]
+
+resolver = "2"

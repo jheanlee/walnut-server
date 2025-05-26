@@ -3,11 +3,12 @@ CMakeFiles
 .idea
 cmake-build*
 
-orm/target
 orm/migration/target
 orm/entity/target
+orm/migration/Cargo.lock
+orm/entity/Cargo.lock
 
-api/target
+target
 
 *.o
 *.a
@@ -15,5 +16,3 @@ api/target
 bin
 lib
 
-orm/migration/Cargo.lock
-orm/entity/Cargo.lock
