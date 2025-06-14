@@ -2,8 +2,10 @@ use axum::body::Body;
 use axum::http::{Response, StatusCode};
 use axum::{http, Json};
 use axum::response::IntoResponse;
+use serde_json::json;
+use crate::auth::jwt::generate_token;
 use crate::common::error::ApiError;
-use crate::orm::master::{db_delete_master, db_is_present, db_list_master, db_modify_master};
+use crate::orm::master::{db_authenticate_master, db_delete_master, db_is_present, db_list_master, db_modify_master};
 
 pub async fn list_master() -> Result<Response<Body>, ApiError> {
   let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
@@ -49,4 +51,26 @@ pub async fn delete_master(Json(master_deletion): Json<MasterDeletion>) -> Resul
   } else {
     Ok(StatusCode::OK)
   }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct MasterLogin {
+  username: String,
+  password: String
+}
+pub async fn master_login(Json(master_login): Json<MasterLogin>) -> Result<Response<Body>, ApiError> {
+  let res = db_authenticate_master(master_login.username.clone(), master_login.password).await?;
+
+  let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
+  Ok(match res {
+    StatusCode::OK => response_builder.body(
+      Body::from(
+        json!(
+          {
+            "token": generate_token(master_login.username).await?
+          }
+        ).to_string()
+      ))?,
+    status_code => response_builder.status(status_code).body(Body::from(""))?
+  })
 }

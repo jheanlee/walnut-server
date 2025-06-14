@@ -96,6 +96,6 @@ pub async fn get_password_item(Json(password_query): Json<PasswordQuery>) -> Res
     }).to_string());
     Ok(response_builder.body(response_body)?)
   } else {
-    Ok(response_builder.body(Body::from(""))?)
+    Ok(response_builder.status(StatusCode::NOT_FOUND).body(Body::from(""))?)
   }
 }

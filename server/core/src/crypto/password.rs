@@ -6,10 +6,7 @@
 // use openssl::base64;
 // use openssl::rand::rand_bytes;
 // 
-// pub fn derive_key(salt: String, password: String, output: &mut [u8; 32]) -> Result<(), ApiError> {
-//   Argon2::default().hash_password_into(password.as_bytes(), base64::decode_block(salt.as_str())?.as_slice(), output)?;
-//   Ok(())
-// }
+
 // 
 // pub fn aes_256_encrypt(key: &[u8; 32], nonce: &mut [u8; 12], plain_text: String) -> Result<Vec<u8>, ApiError> {
 //   let key = GenericArray::from_slice(key);

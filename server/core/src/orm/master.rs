@@ -1,10 +1,11 @@
+use axum::http::StatusCode;
 use crate::common::error::ApiError;
 use crate::SHARED_CELL;
 use entity::entities::master;
 use entity::entities::prelude::Master;
 use openssl::base64;
 use openssl::rand::rand_bytes;
-use openssl::sha::Sha256;
+use openssl::sha::{sha256, Sha256};
 use sea_orm::{sea_query, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, Set};
 
 pub async fn db_list_master() -> Result<Vec<master::PartialModel>, ApiError> {
@@ -54,5 +55,22 @@ pub async fn db_delete_master(username: String) -> Result<u64, ApiError> {
     Ok(res.rows_affected)
   } else {
     Ok(0)
+  }
+}
+
+pub async fn db_authenticate_master(username: String, password: String) -> Result<StatusCode, ApiError> {
+  let db = SHARED_CELL.get().unwrap().database_connection.as_ref().unwrap();
+  let model = master::Entity::find().filter(master::Column::Username.eq(username)).one(db).await?;
+  if let Some(model) = model {
+    let mut hasher = Sha256::new();
+    hasher.update(base64::decode_block(model.master_salt.as_str())?.as_slice());
+    hasher.update(password.as_bytes());
+    if base64::encode_block(hasher.finish().as_ref()) == model.hashed_password {
+      Ok(StatusCode::OK)
+    } else {
+      Ok(StatusCode::UNAUTHORIZED)
+    }
+  } else {
+    Ok(StatusCode::NOT_FOUND)
   }
 }
