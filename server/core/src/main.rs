@@ -1,4 +1,5 @@
 use std::io::Error;
+use axum::middleware;
 use axum::routing::{get, post};
 use clap::Parser;
 use log::{error, LevelFilter};
@@ -6,6 +7,7 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tokio::fs::create_dir_all;
 use crate::api::item::{delete_password_item, get_password_item, list_items, modify_password_item, new_password_item};
 use crate::api::master::{delete_master, list_master, master_login, modify_master, new_master};
+use crate::auth::jwt::verify_token;
 use crate::auth::key::{init_jwt_keys, JwtKeyError, JwtKeyPair};
 use crate::auth::key::JwtKeyError::TokioError;
 use crate::common::opt::Args;
@@ -110,7 +112,7 @@ async fn main() {
     .route("/api/items/password/modify", post(modify_password_item))
     .route("/api/items/password/delete", post(delete_password_item))
     .route("/api/items/password/get", get(get_password_item))
-    //  .layer(authorisation_layer)
+    .layer(middleware::from_fn(verify_token))
 
     .route("/api/master/login", post(master_login));
 
