@@ -6,6 +6,7 @@ use serde_json::json;
 use crate::auth::jwt::generate_token;
 use crate::common::error::ApiError;
 use crate::orm::master::{db_authenticate_master, db_delete_master, db_is_present, db_list_master, db_modify_master};
+use crate::orm::password::db_delete_password_by_master;
 
 pub async fn list_master() -> Result<Response<Body>, ApiError> {
   let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
@@ -26,7 +27,7 @@ pub async fn new_master(Json(master_modification): Json<MasterModification>) -> 
     db_modify_master(master_modification.username, master_modification.password).await?;
     Ok(StatusCode::OK)
   } else {
-    Ok(StatusCode::NOT_FOUND)
+    Ok(StatusCode::CONFLICT)
   }
 }
 
@@ -36,7 +37,7 @@ pub async fn modify_master(Json(master_modification): Json<MasterModification>) 
     db_modify_master(master_modification.username, master_modification.password).await?;
     Ok(StatusCode::OK)
   } else {
-    Ok(StatusCode::CONFLICT)
+    Ok(StatusCode::NOT_FOUND)
   }
 }
 
@@ -45,7 +46,8 @@ pub struct MasterDeletion {
   username: String
 }
 pub async fn delete_master(Json(master_deletion): Json<MasterDeletion>) -> Result<impl IntoResponse, ApiError> {
-  let res = db_delete_master(master_deletion.username).await?;
+  let res = db_delete_master(master_deletion.username.clone()).await?;
+  let _password_delete_res = db_delete_password_by_master(master_deletion.username).await?;
   if res == 0 {
     Ok(StatusCode::NOT_FOUND)
   } else {

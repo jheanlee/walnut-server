@@ -1,4 +1,4 @@
-use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, ModelTrait, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait, QueryFilter, Set};
 use crate::common::error::ApiError;
 use entity::entities::password;
 use entity::entities::password::ActiveModel;
@@ -64,6 +64,13 @@ pub async fn db_delete_password(id: i32) -> Result<u64, ApiError> {
   } else {
     Ok(0)
   }
+}
+
+pub async fn db_delete_password_by_master(master: String) -> Result<u64, ApiError> {
+  let db = SHARED_CELL.get().unwrap().database_connection.as_ref().unwrap();
+  let res = password::Entity::delete_many()
+    .filter(password::Column::Master.eq(master)).exec(db).await?;
+  Ok(res.rows_affected)
 }
 
 pub async fn db_get_password(id: i32) -> Result<Option<String>, ApiError> {
