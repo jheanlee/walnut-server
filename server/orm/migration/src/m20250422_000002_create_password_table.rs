@@ -13,11 +13,12 @@ impl MigrationTrait for Migration {
           .if_not_exists()
           .col(pk_auto(Password::Id))
           .col(string(Password::Master))
+          .col(string(Password::Name))
           .col(string(Password::Website))
-          .col(string_null(Password::Username))
-          .col(string_null(Password::Email))
+          .col(string(Password::Username))
+          .col(string(Password::Email))
           .col(string(Password::EncryptedPassword))
-          .col(string_null(Password::Notes))
+          .col(string(Password::Notes))
           .to_owned(),
       )
       .await
@@ -35,6 +36,7 @@ enum Password {
   Table,
   Id,
   Master,
+  Name,
   Website,
   Username,
   Email,

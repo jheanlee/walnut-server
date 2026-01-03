@@ -8,23 +8,36 @@ use sea_orm::FromQueryResult;
 #[sea_orm(table_name = "password")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i32,
+    pub id: i64,
     pub master: String,
+    pub name: String,
     pub website: String,
-    pub username: Option<String>,
-    pub email: Option<String>,
+    pub username: String,
+    pub email: String,
     pub encrypted_password: String,
-    pub notes: Option<String>,
+    pub notes: String,
 }
 
 #[derive(DerivePartialModel, FromQueryResult, serde::Serialize, serde::Deserialize)]
 #[sea_orm(entity = "Password")]
 pub struct PartialModel {
-    pub id: i32,
+    pub id: i64,
+    pub name: String,
     pub website: String,
     pub username: String,
     pub email: String,
     pub notes: String
+}
+
+#[derive(DerivePartialModel, FromQueryResult, serde::Serialize, serde::Deserialize)]
+#[sea_orm(entity = "Password")]
+pub struct ItemPartialModel {
+    pub name: String,
+    pub website: String,
+    pub username: String,
+    pub email: String,
+    pub encrypted_password: String,
+    pub notes: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

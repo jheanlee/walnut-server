@@ -11,10 +11,11 @@ impl MigrationTrait for Migration {
         Table::create()
           .table(Master::Table)
           .if_not_exists()
-          .col(pk_auto(Master::Id))
+          .col(string_len_uniq(Master::Id, 21).primary_key())
           .col(string_uniq(Master::Username))
           .col(string(Master::HashedPassword))
           .col(string(Master::MasterSalt))
+          .col(boolean(Master::Admin))
           .to_owned(),
       )
       .await
@@ -34,4 +35,5 @@ enum Master {
   Username,
   HashedPassword,
   MasterSalt,
+  Admin,
 }

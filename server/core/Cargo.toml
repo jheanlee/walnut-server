@@ -23,3 +23,5 @@ tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread"] }
 jsonwebtoken = "9.3.1"
 rsa = "0.9.8"
 rand = "0.8.5"
+nanoid = "0.4.0"
+dotenv = "0.15.0"

@@ -1,9 +1,11 @@
 use axum::body::Body;
 use axum::{http, Json};
-use axum::http::{Response, StatusCode};
+use axum::extract::Path;
+use axum::http::{HeaderMap, Response, StatusCode};
 use axum::response::IntoResponse;
 use serde_json::json;
 use entity::entities::password;
+use crate::auth::jwt::get_sub;
 use crate::common::error::ApiError;
 use crate::orm::password::{db_delete_password, db_get_password, db_list_passwords, db_modify_password, db_new_password, PasswordItem};
 
@@ -11,71 +13,84 @@ use crate::orm::password::{db_delete_password, db_get_password, db_list_password
 pub struct Items {
   passwords: Vec<password::PartialModel>,
 }
-pub async fn list_items() -> Result<Response<Body>, ApiError> {
+pub async fn list_items(header_map: HeaderMap) -> Result<Response<Body>, ApiError> {
   let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
   let items = Items {
-    passwords: db_list_passwords().await?
+    passwords: db_list_passwords(
+      get_sub(
+        header_map.get("Authorization")
+          .ok_or(ApiError::StatusCode(StatusCode::UNAUTHORIZED))?
+          .to_str()?)
+        .await.map_err(|e| ApiError::StatusCode(e))?
+    ).await?
   };
   let response_body = Body::from(serde_json::to_string(&items)?);
   let response = response_builder.body(response_body)?;
   Ok(response)
 }
 
+//  TODO password sub verification
+
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct PasswordCreation {
-  pub master: String,
-  pub website: String,
-  pub username: Option<String>,
-  pub email: Option<String>,
-  pub encrypted_password: String,
-  pub notes: Option<String>
+pub struct NewPasswordPath {
+  pub user_id: String
 }
-pub async fn new_password_item(Json(password_creation): Json<PasswordCreation>) -> Result<impl IntoResponse, ApiError> {
-  db_new_password(PasswordItem {
-    master: password_creation.master,
-    website: password_creation.website,
-    username: password_creation.username,
-    email: password_creation.email,
-    encrypted_password: password_creation.encrypted_password,
-    notes: password_creation.notes,
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct NewPasswordBody {
+  pub name: String,
+  pub websites: String,
+  pub username: String,
+  pub email: String,
+  pub encrypted_password: String,
+  pub notes: String
+}
+pub async fn new_password_item(Path(path): Path<NewPasswordPath>, Json(body): Json<NewPasswordBody>) -> Result<impl IntoResponse, ApiError> {
+  db_new_password(path.user_id, PasswordItem {
+    name: body.name,
+    website: body.websites,
+    username: body.username,
+    email: body.email,
+    encrypted_password: body.encrypted_password,
+    notes: body.notes,
   }).await?;
   
   Ok(StatusCode::OK)
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct PasswordModification {
-  pub id: i32,
-  pub master: String,
-  pub website: String,
-  pub username: Option<String>,
-  pub email: Option<String>,
-  pub encrypted_password: String,
-  pub notes: Option<String>
+pub struct UpdatePasswordPath {
+  pub user_id: String,
+  pub item_id: i32
 }
-pub async fn modify_password_item(Json(password_modification): Json<PasswordModification>) -> Result<impl IntoResponse, ApiError> {
-  let res = db_modify_password(password_modification.id, PasswordItem {
-    master: password_modification.master,
-    website: password_modification.website,
-    username: password_modification.username,
-    email: password_modification.email,
-    encrypted_password: password_modification.encrypted_password,
-    notes: password_modification.notes,
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct UpdatePasswordBody {
+  pub name: String,
+  pub websites: String,
+  pub username: String,
+  pub email: String,
+  pub encrypted_password: String,
+  pub notes: String
+}
+pub async fn update_password_item(Path(path): Path<UpdatePasswordPath>, Json(body): Json<UpdatePasswordBody>) -> Result<impl IntoResponse, ApiError> {
+  db_modify_password(path.user_id, path.item_id, PasswordItem {
+    name: body.name,
+    website: body.websites,
+    username: body.username,
+    email: body.email,
+    encrypted_password: body.encrypted_password,
+    notes: body.notes,
   }).await?;
   
-  if res {
-    Ok(StatusCode::OK)
-  } else {
-    Ok(StatusCode::NOT_FOUND)
-  }
+  Ok(StatusCode::OK)
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct PasswordDeletion {
-  pub id: i32,
+pub struct DeletePasswordPath {
+  pub user_id: String,
+  pub item_id: i32,
 }
-pub async fn delete_password_item(Json(password_deletion) : Json<PasswordDeletion>) -> Result<impl IntoResponse, ApiError> {
-  let res = db_delete_password(password_deletion.id).await?;
+pub async fn delete_password_item(Path(path) : Path<DeletePasswordPath>) -> Result<impl IntoResponse, ApiError> {
+  let res = db_delete_password(path.user_id, path.item_id).await?;
   if res == 0 {
     Ok(StatusCode::NOT_FOUND)
   } else {
@@ -84,18 +99,13 @@ pub async fn delete_password_item(Json(password_deletion) : Json<PasswordDeletio
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct PasswordQuery {
-  pub id: i32,
+pub struct GetPasswordPath {
+  pub user_id: String,
+  pub item_id: i32,
 }
-pub async fn get_password_item(Json(password_query): Json<PasswordQuery>) -> Result<Response<Body>, ApiError> {
+pub async fn get_password_item(Path(path): Path<GetPasswordPath>) -> Result<Response<Body>, ApiError> {
   let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
-  let res = db_get_password(password_query.id).await?;
-  if let Some(encrypted_password) = res {
-    let response_body = Body::from(json!({
-      "encrypted_password": encrypted_password
-    }).to_string());
-    Ok(response_builder.body(response_body)?)
-  } else {
-    Ok(response_builder.status(StatusCode::NOT_FOUND).body(Body::from(""))?)
-  }
+  let res = db_get_password(path.user_id, path.item_id).await?;
+  let response_body = Body::from(serde_json::to_string(&res)?);
+  Ok(response_builder.body(response_body)?)
 }

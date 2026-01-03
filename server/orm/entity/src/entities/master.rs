@@ -7,18 +7,19 @@ use sea_orm::FromQueryResult;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "master")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i32,
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub id: String,
     #[sea_orm(unique)]
     pub username: String,
     pub hashed_password: String,
     pub master_salt: String,
+    pub admin: bool,
 }
 
 #[derive(DerivePartialModel, FromQueryResult, serde::Serialize, serde::Deserialize)]
 #[sea_orm(entity = "Master")]
 pub struct PartialModel {
-    pub id: i32,
+    pub id: String,
     pub username: String,
 }
 

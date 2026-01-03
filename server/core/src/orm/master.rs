@@ -1,4 +1,5 @@
 use axum::http::StatusCode;
+use nanoid::nanoid;
 use crate::common::error::ApiError;
 use crate::SHARED_CELL;
 use entity::entities::master;
@@ -18,7 +19,7 @@ pub async fn db_is_present(username: String) -> Result<bool, ApiError> {
   Ok(master::Entity::find().filter(master::Column::Username.eq(username)).one(db).await?.is_some())
 }
 
-pub async fn db_modify_master(username: String, password: String) -> Result<(), ApiError> {
+pub async fn db_modify_master(username: String, password: String, admin: bool) -> Result<(), ApiError> {
   let db = SHARED_CELL.get().unwrap().database_connection.as_ref().unwrap();
 
   let mut salt = [0u8; 16];
@@ -31,10 +32,11 @@ pub async fn db_modify_master(username: String, password: String) -> Result<(), 
   let base64_hashed_password = base64::encode_block(hasher.finish().as_ref());
 
   let master_model = master::ActiveModel {
-    id: Default::default(),
+    id: Set(nanoid!()),
     username: Set(username),
     hashed_password: Set(base64_hashed_password),
     master_salt: Set(base64_salt),
+    admin: Set(admin)
   };
 
   Master::insert(master_model).on_conflict(
@@ -58,7 +60,7 @@ pub async fn db_delete_master(username: String) -> Result<u64, ApiError> {
   }
 }
 
-pub async fn db_authenticate_master(username: String, password: String) -> Result<StatusCode, ApiError> {
+pub async fn db_authenticate_master(username: String, password: String) -> Result<(StatusCode, String), ApiError> {
   let db = SHARED_CELL.get().unwrap().database_connection.as_ref().unwrap();
   let model = master::Entity::find().filter(master::Column::Username.eq(username)).one(db).await?;
   if let Some(model) = model {
@@ -66,11 +68,21 @@ pub async fn db_authenticate_master(username: String, password: String) -> Resul
     hasher.update(base64::decode_block(model.master_salt.as_str())?.as_slice());
     hasher.update(password.as_bytes());
     if base64::encode_block(hasher.finish().as_ref()) == model.hashed_password {
-      Ok(StatusCode::OK)
+      Ok((StatusCode::OK, model.id))
     } else {
-      Ok(StatusCode::UNAUTHORIZED)
+      Ok((StatusCode::UNAUTHORIZED, String::new()))
     }
   } else {
-    Ok(StatusCode::NOT_FOUND)
+    Ok((StatusCode::NOT_FOUND, String::new()))
+  }
+}
+
+pub async fn db_get_master_id(username: String) -> Result<String, ApiError> {
+  let db = SHARED_CELL.get().unwrap().database_connection.as_ref().unwrap();
+  let model = master::Entity::find().filter(master::Column::Username.eq(username)).one(db).await?;
+  if let Some(model) = model {
+    Ok(model.id)
+  } else {
+    Ok(Default::default())
   }
 }

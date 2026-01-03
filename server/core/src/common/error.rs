@@ -5,6 +5,7 @@ use log::warn;
 #[derive(Debug)]
 pub enum ApiError {
   Error(anyhow::Error),
+  StatusCode(StatusCode)
 }
 
 impl axum::response::IntoResponse for ApiError {
@@ -13,6 +14,9 @@ impl axum::response::IntoResponse for ApiError {
       ApiError::Error(e) => {
         warn!("{}", e.to_string());
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
+      }
+      ApiError::StatusCode(code) => {
+        code.into_response()
       }
     }
   }
@@ -27,7 +31,8 @@ impl<E> From<E> for ApiError where E: Into<anyhow::Error> {
 impl ApiError {
   pub fn to_string(self) -> String {
     match self {
-        ApiError::Error(e) => e.to_string(),
+      ApiError::Error(e) => e.to_string(),
+      ApiError::StatusCode(e) => e.to_string()
     }
   }
 }
