@@ -19,12 +19,13 @@ pub async fn list_master() -> Result<Response<Body>, ApiError> {
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct MasterModification {
   username: String,
-  password: String
+  password: String,
+  admin: bool
 }
 pub async fn new_master(Json(master_modification): Json<MasterModification>) -> Result<impl IntoResponse, ApiError> {
   let is_present = db_is_present(master_modification.username.clone()).await?;
   if !is_present {
-    db_modify_master(master_modification.username, master_modification.password).await?;
+    db_modify_master(master_modification.username, master_modification.password, master_modification.admin).await?;
     Ok(StatusCode::OK)
   } else {
     Ok(StatusCode::CONFLICT)
@@ -34,7 +35,7 @@ pub async fn new_master(Json(master_modification): Json<MasterModification>) -> 
 pub async fn modify_master(Json(master_modification): Json<MasterModification>) -> Result<impl IntoResponse, ApiError> {
   let is_present = db_is_present(master_modification.username.clone()).await?;
   if is_present {
-    db_modify_master(master_modification.username, master_modification.password).await?;
+    db_modify_master(master_modification.username, master_modification.password, master_modification.admin).await?;
     Ok(StatusCode::OK)
   } else {
     Ok(StatusCode::NOT_FOUND)
@@ -64,15 +65,18 @@ pub async fn master_login(Json(master_login): Json<MasterLogin>) -> Result<Respo
   let res = db_authenticate_master(master_login.username.clone(), master_login.password).await?;
 
   let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
-  Ok(match res {
-    StatusCode::OK => response_builder.body(
-      Body::from(
-        json!(
-          {
-            "token": generate_token(master_login.username).await?
-          }
-        ).to_string()
-      ))?,
-    status_code => response_builder.status(status_code).body(Body::from(""))?
-  })
+  Ok(
+    match res {
+      (StatusCode::OK, id) => response_builder.body(
+        Body::from(
+          json!(
+            {
+              "token": generate_token(master_login.username).await?,
+              "id": id
+            }
+          ).to_string()
+        ))?,
+      (status_code, _) => response_builder.status(status_code).body(Body::from(""))?
+    }
+  )
 }

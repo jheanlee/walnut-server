@@ -1,11 +1,11 @@
 use std::io::Error;
 use axum::middleware;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post, put};
 use clap::Parser;
 use log::{error, LevelFilter};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tokio::fs::create_dir_all;
-use crate::api::item::{delete_password_item, get_password_item, list_items, modify_password_item, new_password_item};
+use crate::api::item::{delete_password_item, get_password_item, list_items, new_password_item, update_password_item};
 use crate::api::master::{delete_master, list_master, master_login, modify_master, new_master};
 use crate::auth::jwt::verify_token;
 use crate::auth::key::{init_jwt_keys, JwtKeyError, JwtKeyPair};
@@ -105,13 +105,13 @@ async fn main() {
     .route("/api/master/new", post(new_master))
     .route("/api/master/modify", post(modify_master))
     .route("/api/master/delete", post(delete_master))
-    //  .layer(management_layer)
+     // .layer(management_layer)
     
-    .route("/api/items/list", get(list_items))
-    .route("/api/items/password/new", post(new_password_item))
-    .route("/api/items/password/modify", post(modify_password_item))
-    .route("/api/items/password/delete", post(delete_password_item))
-    .route("/api/items/password/get", get(get_password_item))
+    .route("/api/{user_id}/items", get(list_items))
+    .route("/api/{user_id}/items/password", post(new_password_item))
+    .route("/api/{user_id}/items/password/{item_id}", put(update_password_item))
+    .route("/api/{user_id}/items/password/{item_id}", delete(delete_password_item))
+    .route("/api/{user_id}/items/password/{item_id}", get(get_password_item)) //  TODO path
     .layer(middleware::from_fn(verify_token))
 
     .route("/api/master/login", post(master_login));

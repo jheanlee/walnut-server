@@ -13,6 +13,18 @@ pub struct Claims {
   pub iat: u64,
 }
 
+pub async fn get_sub(jwt: &str) -> Result<String, StatusCode> {
+  let mut validation = Validation::new(Algorithm::RS256);
+  validation.set_required_spec_claims(&["sub", "iat", "exp"]);
+
+  match jsonwebtoken::decode::<Claims>(jwt, &SHARED_CELL.get().unwrap().jwt_key_pair.decoding_key, &validation) {
+    Ok(claims) => {
+      Ok(claims.claims.sub)
+    },
+    Err(_) => Err(StatusCode::UNAUTHORIZED)
+  }
+}
+
 pub async fn generate_token(sub: String) -> Result<String, ApiError> {
   let claims = Claims {
     sub: sub,
