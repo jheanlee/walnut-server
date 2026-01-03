@@ -6,9 +6,9 @@ use entity::entities::password::{ActiveModel, ItemPartialModel};
 use entity::entities::prelude::Password;
 use crate::SHARED_CELL;
 
-pub async fn db_list_passwords(master_username: String) -> Result<Vec<password::PartialModel>, ApiError> {
+pub async fn db_list_passwords(master_id: String) -> Result<Vec<password::PartialModel>, ApiError> {
   let db = SHARED_CELL.get().unwrap().database_connection.as_ref().unwrap();
-  Ok(password::Entity::find().filter(password::Column::Master.eq(master_username)).into_partial_model().all(db).await?)
+  Ok(password::Entity::find().filter(password::Column::Master.eq(master_id)).into_partial_model().all(db).await?)
 }
 
 pub struct PasswordItem {
@@ -45,6 +45,7 @@ pub async fn db_modify_password(user_id: String, item_id: i32, item: PasswordIte
   if let Some(password_item) = password_item {
     if password_item.master == user_id {
       let mut password_model = password_item.into_active_model();
+      password_model.name = Set(item.name);
       password_model.website = Set(item.website);
       password_model.username = Set(item.username);
       password_model.email = Set(item.email);

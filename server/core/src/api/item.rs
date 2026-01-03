@@ -3,7 +3,6 @@ use axum::{http, Json};
 use axum::extract::Path;
 use axum::http::{HeaderMap, Response, StatusCode};
 use axum::response::IntoResponse;
-use serde_json::json;
 use entity::entities::password;
 use crate::auth::jwt::get_sub;
 use crate::common::error::ApiError;
@@ -13,20 +12,27 @@ use crate::orm::password::{db_delete_password, db_get_password, db_list_password
 pub struct Items {
   passwords: Vec<password::PartialModel>,
 }
-pub async fn list_items(header_map: HeaderMap) -> Result<Response<Body>, ApiError> {
-  let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
-  let items = Items {
-    passwords: db_list_passwords(
-      get_sub(
-        header_map.get("Authorization")
-          .ok_or(ApiError::StatusCode(StatusCode::UNAUTHORIZED))?
-          .to_str()?)
-        .await.map_err(|e| ApiError::StatusCode(e))?
-    ).await?
-  };
-  let response_body = Body::from(serde_json::to_string(&items)?);
-  let response = response_builder.body(response_body)?;
-  Ok(response)
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct ListItemPath {
+  pub user_id: String
+}
+pub async fn list_items(header_map: HeaderMap, Path(list_item_path): Path<ListItemPath>) -> Result<Response<Body>, ApiError> {
+  if list_item_path.user_id == get_sub(
+    header_map.get("Authorization")
+      .ok_or(ApiError::StatusCode(StatusCode::UNAUTHORIZED))?
+      .to_str()?)
+    .await.map_err(|e| ApiError::StatusCode(e))? {
+    let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
+    let items = Items {
+      passwords: db_list_passwords(list_item_path.user_id).await?
+    };
+    let response_body = Body::from(serde_json::to_string(&items)?);
+    let response = response_builder.body(response_body)?;
+    Ok(response)
+  } else {
+    Err(ApiError::StatusCode(StatusCode::UNAUTHORIZED))
+  }
 }
 
 //  TODO password sub verification

@@ -71,7 +71,7 @@ pub async fn master_login(Json(master_login): Json<MasterLogin>) -> Result<Respo
         Body::from(
           json!(
             {
-              "token": generate_token(master_login.username).await?,
+              "token": generate_token(id.clone()).await?,
               "id": id
             }
           ).to_string()
