@@ -6,7 +6,7 @@ use entity::entities::master;
 use entity::entities::prelude::Master;
 use openssl::base64;
 use openssl::rand::rand_bytes;
-use openssl::sha::{sha256, Sha256};
+use openssl::sha::Sha256;
 use sea_orm::{sea_query, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, Set};
 
 pub async fn db_list_master() -> Result<Vec<master::PartialModel>, ApiError> {
@@ -73,7 +73,7 @@ pub async fn db_authenticate_master(username: String, password: String) -> Resul
       Ok((StatusCode::UNAUTHORIZED, String::new()))
     }
   } else {
-    Ok((StatusCode::NOT_FOUND, String::new()))
+    Ok((StatusCode::UNAUTHORIZED, String::new()))
   }
 }
 

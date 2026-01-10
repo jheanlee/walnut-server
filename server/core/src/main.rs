@@ -6,7 +6,7 @@ use log::{error, LevelFilter};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tokio::fs::create_dir_all;
 use crate::api::item::{delete_password_item, get_password_item, list_items, new_password_item, update_password_item};
-use crate::api::master::{delete_master, list_master, master_login, modify_master, new_master};
+use crate::api::master::{delete_master, is_username_available, list_master, master_login, master_signup, modify_master, new_master, signup_availability};
 use crate::auth::jwt::verify_token;
 use crate::auth::key::{init_jwt_keys, JwtKeyError, JwtKeyPair};
 use crate::auth::key::JwtKeyError::TokioError;
@@ -27,7 +27,8 @@ pub struct Shared {
 
 pub struct Config {
   pub jwt_pub_key_path: String,
-  pub jwt_priv_key_path: String
+  pub jwt_priv_key_path: String,
+  pub self_signup_enabled: bool
 }
 
 
@@ -52,6 +53,7 @@ async fn main() {
   CONFIG_CELL.set(Config {
     jwt_pub_key_path: args.jwt_credentials_dir.clone() + "/branch-vault-jwt-public-key.pem",
     jwt_priv_key_path: args.jwt_credentials_dir + "/branch-vault-jwt-private-key.pem",
+    self_signup_enabled: args.self_signup
   }).unwrap_or_else(|_| {
     error!("Failed to set configuration");
     panic!();
@@ -111,9 +113,11 @@ async fn main() {
     .route("/api/{user_id}/items/password", post(new_password_item))
     .route("/api/{user_id}/items/password/{item_id}", put(update_password_item))
     .route("/api/{user_id}/items/password/{item_id}", delete(delete_password_item))
-    .route("/api/{user_id}/items/password/{item_id}", get(get_password_item)) //  TODO path
+    .route("/api/{user_id}/items/password/{item_id}", get(get_password_item))
     .layer(middleware::from_fn(verify_token))
 
+    .route("/api/master/signup", post(master_signup).layer(middleware::from_fn(signup_availability)))
+    .route("/api/master/username", get(is_username_available))
     .route("/api/master/login", post(master_login));
 
   let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap_or_else(|e| {

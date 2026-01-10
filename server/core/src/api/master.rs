@@ -1,12 +1,24 @@
 use axum::body::Body;
 use axum::http::{Response, StatusCode};
 use axum::{http, Json};
+use axum::extract::{Query, Request};
+use axum::middleware::Next;
 use axum::response::IntoResponse;
 use serde_json::json;
 use crate::auth::jwt::generate_token;
 use crate::common::error::ApiError;
+use crate::CONFIG_CELL;
 use crate::orm::master::{db_authenticate_master, db_delete_master, db_is_present, db_list_master, db_modify_master};
 use crate::orm::password::db_delete_password_by_master;
+
+pub async fn signup_availability(request: Request, next: Next) -> Result<axum::response::Response, StatusCode> {
+  if CONFIG_CELL.get().unwrap().self_signup_enabled {
+    let response = next.run(request).await;
+    Ok(response)
+  } else {
+    Err(StatusCode::UNAUTHORIZED)
+  }
+}
 
 pub async fn list_master() -> Result<Response<Body>, ApiError> {
   let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
@@ -14,6 +26,34 @@ pub async fn list_master() -> Result<Response<Body>, ApiError> {
   let response_body = Body::from(serde_json::to_string(&master_items)?);
   let response = response_builder.body(response_body)?;
   Ok(response)
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct IsUsernameAvailableQuery {
+  username: String
+}
+pub async fn is_username_available(Query(query): Query<IsUsernameAvailableQuery>) -> Result<impl IntoResponse, ApiError> {
+  let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
+  Ok(
+    response_builder.body(json!({
+      "available": !db_is_present(query.username).await?
+    }).to_string())?
+  )
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct MasterSignup {
+  username: String,
+  password: String,
+}
+pub async fn master_signup(Json(master_signup): Json<MasterSignup>) -> Result<impl IntoResponse, ApiError> {
+  let is_present = db_is_present(master_signup.username.clone()).await?;
+  if !is_present {
+    db_modify_master(master_signup.username, master_signup.password, false).await?;
+    Ok(StatusCode::OK)
+  } else {
+    Ok(StatusCode::CONFLICT)
+  }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

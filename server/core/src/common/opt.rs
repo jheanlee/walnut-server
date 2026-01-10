@@ -4,6 +4,8 @@ pub struct Args {
   pub database: String,
   #[arg(short = 'j', long, default_value_t = {"./credentials".to_string()})]
   pub jwt_credentials_dir: String,
+  #[arg(long, default_value_t = false)]
+  pub self_signup: bool,
   #[arg(short = 'v', long, default_value_t = 20)]
   pub verbose: u8,
 }
