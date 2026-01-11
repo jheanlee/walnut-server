@@ -1,4 +1,4 @@
 [workspace]
-members = ["server/orm/migration", "server/orm/entity", "server/core", "client/cli"]
+members = ["orm/migration", "orm/entity", "core"]
 
 resolver = "2"
