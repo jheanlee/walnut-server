@@ -11,13 +11,22 @@ use crate::CONFIG_CELL;
 use crate::orm::master::{db_authenticate_master, db_delete_master, db_is_present, db_list_master, db_modify_master};
 use crate::orm::password::db_delete_password_by_master;
 
-pub async fn signup_availability(request: Request, next: Next) -> Result<axum::response::Response, StatusCode> {
+pub async fn signup_availability_middleware(request: Request, next: Next) -> Result<axum::response::Response, StatusCode> {
   if CONFIG_CELL.get().unwrap().self_signup_enabled {
     let response = next.run(request).await;
     Ok(response)
   } else {
     Err(StatusCode::UNAUTHORIZED)
   }
+}
+
+pub async fn get_signup_availability() -> Result<impl IntoResponse, ApiError> {
+  let response_builder = Response::builder().header(http::header::CONTENT_TYPE, "application/json");
+  let response_body = Body::from(serde_json::to_string(&json!({
+    "signup_available" : CONFIG_CELL.get().unwrap().self_signup_enabled
+  }))?);
+  let response = response_builder.body(response_body)?;
+  Ok(response)
 }
 
 pub async fn list_master() -> Result<Response<Body>, ApiError> {

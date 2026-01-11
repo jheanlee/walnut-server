@@ -6,7 +6,7 @@ use log::{error, LevelFilter};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tokio::fs::create_dir_all;
 use crate::api::item::{delete_password_item, get_password_item, list_items, new_password_item, update_password_item};
-use crate::api::master::{delete_master, is_username_available, list_master, master_login, master_signup, modify_master, new_master, signup_availability};
+use crate::api::master::{delete_master, is_username_available, list_master, master_login, master_signup, modify_master, new_master, get_signup_availability, signup_availability_middleware};
 use crate::auth::jwt::verify_token;
 use crate::auth::key::{init_jwt_keys, JwtKeyError, JwtKeyPair};
 use crate::auth::key::JwtKeyError::TokioError;
@@ -116,7 +116,8 @@ async fn main() {
     .route("/api/{user_id}/items/password/{item_id}", get(get_password_item))
     .layer(middleware::from_fn(verify_token))
 
-    .route("/api/master/signup", post(master_signup).layer(middleware::from_fn(signup_availability)))
+    .route("/api/master/signup/availability", get(get_signup_availability))
+    .route("/api/master/signup", post(master_signup).layer(middleware::from_fn(signup_availability_middleware)))
     .route("/api/master/username", get(is_username_available))
     .route("/api/master/login", post(master_login));
 
