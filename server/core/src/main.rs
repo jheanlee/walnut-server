@@ -51,8 +51,8 @@ async fn main() {
   }
 
   CONFIG_CELL.set(Config {
-    jwt_pub_key_path: args.jwt_credentials_dir.clone() + "/branch-vault-jwt-public-key.pem",
-    jwt_priv_key_path: args.jwt_credentials_dir + "/branch-vault-jwt-private-key.pem",
+    jwt_pub_key_path: args.jwt_credentials_dir.clone() + "/walnut-jwt-public-key.pem",
+    jwt_priv_key_path: args.jwt_credentials_dir + "/walnut-jwt-private-key.pem",
     self_signup_enabled: args.self_signup
   }).unwrap_or_else(|_| {
     error!("Failed to set configuration");

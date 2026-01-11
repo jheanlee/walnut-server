@@ -1,16 +1,13 @@
 [package]
-name = "branch-vault"
+name = "walnut-server"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 entity = { path = "../orm/entity" }
 
-aes-gcm-siv = "0.11.1"
 anyhow = "1.0.98"
-argon2 = { version = "0.5.3", features = ["alloc", "std"] }
 axum = "0.8.4"
-chrono = "0.4.41"
 clap = { version = "4.5.38", features = ["derive"] }
 env_logger = "0.11.8"
 log = "0.4.27"

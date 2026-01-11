@@ -9,7 +9,7 @@ orm/migration/Cargo.lock
 orm/entity/Cargo.lock
 
 target
-branch-vault.sqlite
+*.sqlite
 credentials
 
 *.o
